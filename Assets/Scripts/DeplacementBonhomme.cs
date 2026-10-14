@@ -15,6 +15,12 @@ public class DeplacementBonhomme : MonoBehaviour
     [Tooltip("Caméra utilisée pour savoir où est « devant ». Par défaut : la caméra principale.")]
     public Transform cameraReference;
 
+    [Tooltip("Le modèle visible du personnage, tourné vers la direction de déplacement.")]
+    public Transform modele;
+
+    [Tooltip("Vitesse à laquelle le personnage se tourne vers sa direction.")]
+    public float vitesseRotation = 12f;
+
     [Header("Saut")]
     [Tooltip("Hauteur maximale du saut, en unités.")]
     public float hauteurSaut = 1.5f;
@@ -35,7 +41,7 @@ public class DeplacementBonhomme : MonoBehaviour
     public float tempsMemoireSaut = 0.1f;
 
     Rigidbody corps;
-    SphereCollider sphere;
+    Collider forme;
     Vector3 direction;
     float dernierSol = -1f;
     float dernierAppuiSaut = -1f;
@@ -48,7 +54,7 @@ public class DeplacementBonhomme : MonoBehaviour
     void Awake()
     {
         corps = GetComponent<Rigidbody>();
-        sphere = GetComponent<SphereCollider>();
+        forme = GetComponent<Collider>();
         corps.freezeRotation = true;
         corps.useGravity = false; // on applique notre propre gravité, réglée pour le saut
         if (cameraReference == null && Camera.main != null)
@@ -82,6 +88,13 @@ public class DeplacementBonhomme : MonoBehaviour
         }
 
         direction = Vector3.ClampMagnitude(devant * avant + droite * cote, 1f);
+
+        // Le personnage regarde là où il va.
+        if (modele != null && direction.sqrMagnitude > 0.01f)
+        {
+            Quaternion cible = Quaternion.LookRotation(direction, Vector3.up);
+            modele.rotation = Quaternion.Slerp(modele.rotation, cible, vitesseRotation * Time.deltaTime);
+        }
 
         if (clavier.spaceKey.wasPressedThisFrame)
             dernierAppuiSaut = Time.time;
@@ -119,8 +132,12 @@ public class DeplacementBonhomme : MonoBehaviour
 
     bool EstAuSol()
     {
-        float rayon = sphere != null ? sphere.radius * transform.lossyScale.y : 0.5f;
-        Vector3 centre = transform.position + (sphere != null ? sphere.center : Vector3.zero);
+        if (forme == null) return false;
+
+        // Petite sphère lancée vers le bas depuis le bas du collider.
+        Bounds b = forme.bounds;
+        float rayon = Mathf.Min(b.extents.x, b.extents.z);
+        Vector3 centre = b.center + Vector3.down * (b.extents.y - rayon);
         return Physics.SphereCast(centre, rayon * 0.9f, Vector3.down, out _, rayon * 0.1f + 0.05f,
             ~0, QueryTriggerInteraction.Ignore);
     }
