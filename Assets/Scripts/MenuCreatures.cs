@@ -43,6 +43,27 @@ public class MenuCreatures : MonoBehaviour
         return t;
     }
 
+    // Vrai s'il reste au moins un emplacement vide.
+    public bool APlaceLibre => IndexLibre() >= 0;
+
+    int IndexLibre()
+    {
+        if (creatures == null || creatures.Length < 6)
+            System.Array.Resize(ref creatures, 6);
+        for (int i = 0; i < 6; i++)
+            if (creatures[i] == null) return i;
+        return -1;
+    }
+
+    // Met l'image d'une créature capturée dans le premier emplacement libre.
+    public bool Ajouter(Texture image)
+    {
+        int i = IndexLibre();
+        if (i < 0 || image == null) return false;
+        creatures[i] = image;
+        return true;
+    }
+
     void OnGUI()
     {
         float echelle = Screen.height / 1080f;

@@ -24120,6 +24120,7 @@ GameObject:
   - component: {fileID: 1000020005}
   - component: {fileID: 1000020006}
   - component: {fileID: 1000020007}
+  - component: {fileID: 1700000001}
   m_Layer: 0
   m_Name: Personnage
   m_TagString: Player
@@ -138584,6 +138585,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1200000002}
   - component: {fileID: 1200000003}
+  - component: {fileID: 1700000002}
   m_Layer: 0
   m_Name: Groudon
   m_TagString: Untagged
@@ -145536,6 +145538,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1300000367}
   - component: {fileID: 1300000368}
+  - component: {fileID: 1700000003}
   m_Layer: 0
   m_Name: Kyogre
   m_TagString: Untagged
@@ -160556,6 +160559,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1500000360}
   - component: {fileID: 1500000361}
+  - component: {fileID: 1700000004}
   m_Layer: 0
   m_Name: Rayquaza
   m_TagString: Untagged
@@ -164481,6 +164485,62 @@ MonoBehaviour:
   marge: 12
   couleurFond: {r: 0, g: 0, b: 0, a: 0.45}
   couleurBord: {r: 1, g: 1, b: 1, a: 0.9}
+--- !u!114 &1700000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000020001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d4f8b0c2e5a4c7d9e1f3a5b7c9d0e12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  materiau: {fileID: 2100000, guid: cb2a450f3cfccdeed23109881797c8ce, type: 2}
+  taille: 0.35
+  vitesseAvant: 12
+  vitesseHaut: 4
+  delaiEntreLancers: 0.5
+--- !u!114 &1700000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1200000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f6b0d2e4a7c4e9fb03c5d7e9f1a2b34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  portrait: {fileID: 2800000, guid: 5e2b8c4d7a1f4e3b9c6d0a2f8e4b1c7d, type: 3}
+--- !u!114 &1700000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1300000366}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f6b0d2e4a7c4e9fb03c5d7e9f1a2b34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  portrait: {fileID: 2800000, guid: 6f3c9d5e8b2a4f1c0d7e1b3a9f5c2d8e, type: 3}
+--- !u!114 &1700000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1500000359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f6b0d2e4a7c4e9fb03c5d7e9f1a2b34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  portrait: {fileID: 2800000, guid: 7a4d0e6f9c3b4a2d1e8f2c4b0a6d3e9f, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
