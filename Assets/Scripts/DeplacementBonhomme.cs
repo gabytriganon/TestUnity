@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Déplace le bonhomme avec Z (avancer), Q (gauche), S (reculer) et D (droite),
-// et le fait sauter avec Espace. Il monte seul les petites marches (relief des
-// montagnes) et s'enfonce à moitié dans l'eau (zones avec un ZoneEau).
+// Déplace le bonhomme : Z avance, S recule, Q et D le font tourner à gauche et à droite
+// (la caméra tourne avec lui pour rester derrière). Espace le fait sauter : tout obstacle,
+// même bas, doit être franchi en sautant. Il s'enfonce à moitié dans l'eau (zones avec un ZoneEau).
 // Les touches sont lues par leur position physique sur le clavier :
 // sur un clavier AZERTY, ce sont bien Z Q S D (et W A S D sur un QWERTY).
 [RequireComponent(typeof(Rigidbody))]
@@ -13,14 +13,11 @@ public class DeplacementBonhomme : MonoBehaviour
     [Tooltip("Vitesse de déplacement en unités par seconde.")]
     public float vitesse = 5f;
 
-    [Tooltip("Caméra utilisée pour savoir où est « devant ». Par défaut : la caméra principale.")]
-    public Transform cameraReference;
+    [Tooltip("Vitesse à laquelle Q et D font tourner le personnage, en degrés par seconde.")]
+    public float vitesseVirage = 150f;
 
-    [Tooltip("Le modèle visible du personnage, tourné vers la direction de déplacement.")]
+    [Tooltip("Le modèle visible du personnage, tourné vers là où il regarde (facultatif).")]
     public Transform modele;
-
-    [Tooltip("Vitesse à laquelle le personnage se tourne vers sa direction.")]
-    public float vitesseRotation = 12f;
 
     [Header("Saut")]
     [Tooltip("Hauteur maximale du saut, en unités.")]
@@ -41,10 +38,6 @@ public class DeplacementBonhomme : MonoBehaviour
     [Tooltip("Un appui sur Espace juste avant d'atterrir est gardé en mémoire pendant ce délai.")]
     public float tempsMemoireSaut = 0.1f;
 
-    [Header("Marches")]
-    [Tooltip("Hauteur maximale d'une marche franchie en marchant. Au-delà, il faut sauter.")]
-    public float hauteurMarche = 0.65f;
-
     [Header("Eau")]
     [Tooltip("Part de la hauteur du personnage sous l'eau (0.5 = à moitié immergé).")]
     [Range(0f, 1f)] public float immersion = 0.5f;
@@ -58,6 +51,7 @@ public class DeplacementBonhomme : MonoBehaviour
     Rigidbody corps;
     Collider forme;
     Vector3 direction;
+    float cap;
     float dernierSol = -1f;
     float dernierAppuiSaut = -1f;
     bool espaceMaintenu;
@@ -65,6 +59,9 @@ public class DeplacementBonhomme : MonoBehaviour
     Vector3 centreSphere;
     float enfoncement;
     readonly Collider[] tampon = new Collider[8];
+
+    // Direction dans laquelle regarde le personnage (la caméra se place derrière).
+    public Quaternion Orientation => Quaternion.Euler(0f, cap, 0f);
 
     // Gravité et vitesse de départ calculées à partir de la hauteur et du temps voulus.
     float Gravite => 2f * hauteurSaut / (tempsJusquauSommet * tempsJusquauSommet);
@@ -79,8 +76,7 @@ public class DeplacementBonhomme : MonoBehaviour
             centreSphere = sphere.center;
         corps.freezeRotation = true;
         corps.useGravity = false; // on applique notre propre gravité, réglée pour le saut
-        if (cameraReference == null && Camera.main != null)
-            cameraReference = Camera.main.transform;
+        cap = transform.eulerAngles.y;
     }
 
     void Update()
@@ -94,29 +90,18 @@ public class DeplacementBonhomme : MonoBehaviour
         }
 
         float avant = 0f;
-        float cote = 0f;
-        if (clavier.wKey.isPressed) avant += 1f; // Z sur AZERTY
-        if (clavier.sKey.isPressed) avant -= 1f; // S
-        if (clavier.aKey.isPressed) cote -= 1f;  // Q sur AZERTY
-        if (clavier.dKey.isPressed) cote += 1f;  // D
+        float virage = 0f;
+        if (clavier.wKey.isPressed) avant += 1f;  // Z sur AZERTY
+        if (clavier.sKey.isPressed) avant -= 1f;  // S
+        if (clavier.aKey.isPressed) virage -= 1f; // Q sur AZERTY
+        if (clavier.dKey.isPressed) virage += 1f; // D
 
-        // « Devant » et « à droite » sont ceux de la caméra, ramenés à l'horizontale.
-        Vector3 devant = Vector3.forward;
-        Vector3 droite = Vector3.right;
-        if (cameraReference != null)
-        {
-            devant = Vector3.ProjectOnPlane(cameraReference.forward, Vector3.up).normalized;
-            droite = Vector3.ProjectOnPlane(cameraReference.right, Vector3.up).normalized;
-        }
+        // Q et D font tourner le personnage ; Z et S le font avancer ou reculer droit devant lui.
+        cap += virage * vitesseVirage * Time.deltaTime;
+        direction = Orientation * Vector3.forward * avant;
 
-        direction = Vector3.ClampMagnitude(devant * avant + droite * cote, 1f);
-
-        // Le personnage regarde là où il va.
-        if (modele != null && direction.sqrMagnitude > 0.01f)
-        {
-            Quaternion cible = Quaternion.LookRotation(direction, Vector3.up);
-            modele.rotation = Quaternion.Slerp(modele.rotation, cible, vitesseRotation * Time.deltaTime);
-        }
+        if (modele != null)
+            modele.rotation = Orientation;
 
         if (clavier.spaceKey.wasPressedThisFrame)
             dernierAppuiSaut = Time.time;
@@ -131,9 +116,6 @@ public class DeplacementBonhomme : MonoBehaviour
 
         bool dansEau = EstDansEau();
         MettreAJourImmersion(dansEau);
-
-        if (auSol && direction.sqrMagnitude > 0.01f)
-            MonterMarche();
 
         Vector3 v = direction * (dansEau ? vitesse * facteurVitesseEau : vitesse);
         v.y = corps.linearVelocity.y;
@@ -180,43 +162,6 @@ public class DeplacementBonhomme : MonoBehaviour
         float cible = dansEau ? diametre * immersion : 0f;
         enfoncement = Mathf.MoveTowards(enfoncement, cible, vitesseImmersion * Time.fixedDeltaTime);
         sphere.center = centreSphere + Vector3.up * (enfoncement / transform.lossyScale.y);
-    }
-
-    // Monte automatiquement une marche basse devant le personnage (comme le « step offset »
-    // des contrôleurs de personnage classiques).
-    void MonterMarche()
-    {
-        Bounds b = forme.bounds;
-        float rayon = Mathf.Min(b.extents.x, b.extents.z);
-        float bas = b.min.y;
-        Vector3 dir = direction.normalized;
-
-        // Un obstacle juste devant, au ras du sol ?
-        Vector3 origineBas = new Vector3(b.center.x, bas + 0.05f, b.center.z);
-        if (!Physics.Raycast(origineBas, dir, out RaycastHit mur, rayon + 0.15f, ~0, QueryTriggerInteraction.Ignore))
-            return;
-        if (mur.normal.y > 0.7f) return; // pente douce : rien à faire
-
-        // On cherche le dessus de la marche, juste derrière son bord.
-        Vector3 origineHaut = mur.point + dir * 0.05f;
-        origineHaut.y = bas + hauteurMarche + 0.05f;
-        if (!Physics.Raycast(origineHaut, Vector3.down, out RaycastHit dessus, hauteurMarche + 0.05f, ~0,
-                QueryTriggerInteraction.Ignore))
-            return;
-        float hauteur = dessus.point.y - bas;
-        if (hauteur <= 0.01f || hauteur > hauteurMarche || dessus.normal.y < 0.7f) return;
-
-        // Assez de place au-dessus de la marche pour le personnage ?
-        Vector3 centreApres = b.center + Vector3.up * (hauteur + 0.02f) + dir * 0.1f;
-        int n = Physics.OverlapSphereNonAlloc(centreApres, rayon * 0.95f, tampon, ~0,
-            QueryTriggerInteraction.Ignore);
-        for (int i = 0; i < n; i++)
-            if (tampon[i] != forme)
-                return;
-
-        corps.position += Vector3.up * (hauteur + 0.02f);
-        Vector3 v = corps.linearVelocity;
-        if (v.y < 0f) corps.linearVelocity = new Vector3(v.x, 0f, v.z);
     }
 
     bool EstAuSol()
