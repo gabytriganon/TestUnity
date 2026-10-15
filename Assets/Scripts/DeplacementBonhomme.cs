@@ -68,6 +68,7 @@ public class DeplacementBonhomme : MonoBehaviour
     SphereCollider sphere;
     Vector3 centreSphere;
     float enfoncement;
+    bool dansEauAuSol;
     readonly Collider[] tampon = new Collider[8];
 
     // Direction dans laquelle regarde le personnage (la caméra se place derrière).
@@ -136,7 +137,7 @@ public class DeplacementBonhomme : MonoBehaviour
         plonge = false;
         plongeeDemandee = false;
 
-        bool dansEau = EstDans<ZoneEau>();
+        bool dansEau = DansEauPeuProfonde(auSol);
         MettreAJourImmersion(dansEau);
 
         Vector3 v = direction * (dansEau ? vitesse * facteurVitesseEau : vitesse);
@@ -212,6 +213,21 @@ public class DeplacementBonhomme : MonoBehaviour
             if (tampon[i].GetComponent<T>() != null)
                 return true;
         return false;
+    }
+
+    // Dans une zone d'eau ET posé au fond de l'eau (pas sur une plateforme ou un rocher
+    // au-dessus de la surface). En l'air, on garde l'état du dernier appui au sol.
+    bool DansEauPeuProfonde(bool auSol)
+    {
+        if (!auSol) return dansEauAuSol;
+        dansEauAuSol = false;
+        if (forme == null) return false;
+        int n = Physics.OverlapSphereNonAlloc(forme.bounds.center, 0.05f, tampon, ~0,
+            QueryTriggerInteraction.Collide);
+        for (int i = 0; i < n; i++)
+            if (tampon[i].GetComponent<ZoneEau>() != null && forme.bounds.min.y < tampon[i].bounds.center.y)
+                dansEauAuSol = true;
+        return dansEauAuSol;
     }
 
     // Dans l'eau, on remonte le collider par rapport au modèle visible :

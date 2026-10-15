@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // Appuyer sur E lance une sphère de capture devant le personnage, en cloche.
+// Au lancement du jeu, 3 sphères sont posées au sol devant le personnage (décor).
 public class LancerSphere : MonoBehaviour
 {
     [Tooltip("Matériau de base de la sphère (une texture rouge et blanche lui est ajoutée).")]
@@ -39,21 +40,35 @@ public class LancerSphere : MonoBehaviour
         Lancer();
     }
 
+    void Start()
+    {
+        PoserSpheresAuSol();
+    }
+
+    // Au lancement du jeu : 3 sphères alignées sur le sol, face au personnage.
+    void PoserSpheresAuSol()
+    {
+        Vector3 devant = deplacement != null ? deplacement.Orientation * Vector3.forward : transform.forward;
+        Vector3 droite = Vector3.Cross(Vector3.up, devant).normalized;
+        Vector3 centre = transform.position + devant * 2.5f;
+        for (int i = -1; i <= 1; i++)
+        {
+            Vector3 p = centre + droite * (i * 0.8f);
+            float sol = p.y - 0.5f;
+            if (Physics.Raycast(p + Vector3.up * 5f, Vector3.down, out RaycastHit impact, 20f, ~0, QueryTriggerInteraction.Ignore))
+                sol = impact.point.y;
+            GameObject sphere = CreerSphere(new Vector3(p.x, sol + taille / 2f, p.z), Quaternion.LookRotation(-devant));
+            sphere.name = "Sphere au sol";
+        }
+    }
+
     void Lancer()
     {
         Vector3 devant = deplacement != null ? deplacement.Orientation * Vector3.forward : transform.forward;
         Vector3 depart = transform.position + Vector3.up * 0.6f + devant * 0.7f;
 
-        PreparerMateriaux();
-        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        GameObject sphere = CreerSphere(depart, Quaternion.LookRotation(devant));
         sphere.name = "Sphere lancee";
-        sphere.transform.SetPositionAndRotation(depart, Quaternion.LookRotation(devant));
-        sphere.transform.localScale = Vector3.one * taille;
-        sphere.GetComponent<Renderer>().sharedMaterial = materiauCoque;
-
-        // Le bouton au milieu de la bande noire, sur la face avant (+Z).
-        AjouterBouton(sphere.transform, 0.36f, 0.43f, materiauNoir);
-        AjouterBouton(sphere.transform, 0.24f, 0.47f, materiauBlanc);
 
         // La sphère ne doit pas toucher le personnage qui la lance.
         Collider colSphere = sphere.GetComponent<Collider>();
@@ -67,6 +82,19 @@ public class LancerSphere : MonoBehaviour
         corps.linearVelocity = devant * vitesseAvant + Vector3.up * vitesseHaut;
 
         sphere.AddComponent<SphereLancee>();
+    }
+
+    // Une sphère de capture : coque rouge et blanche, bande noire, bouton blanc devant (+Z).
+    GameObject CreerSphere(Vector3 position, Quaternion rotation)
+    {
+        PreparerMateriaux();
+        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sphere.transform.SetPositionAndRotation(position, rotation);
+        sphere.transform.localScale = Vector3.one * taille;
+        sphere.GetComponent<Renderer>().sharedMaterial = materiauCoque;
+        AjouterBouton(sphere.transform, 0.36f, 0.43f, materiauNoir);
+        AjouterBouton(sphere.transform, 0.24f, 0.47f, materiauBlanc);
+        return sphere;
     }
 
     static void AjouterBouton(Transform parent, float diametre, float avance, Material mat)
