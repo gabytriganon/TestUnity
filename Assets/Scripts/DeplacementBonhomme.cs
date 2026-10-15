@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 // Déplace le bonhomme : Z avance, S recule, Q et D le font tourner à gauche et à droite
 // (la caméra tourne avec lui pour rester derrière). Espace le fait sauter : tout obstacle,
 // même bas, doit être franchi en sautant. Il s'enfonce à moitié dans l'eau (zones avec un ZoneEau).
+// En eau profonde (zones avec un ZoneEauProfonde), il flotte ; A plonge et fait remonter.
 // Les touches sont lues par leur position physique sur le clavier :
 // sur un clavier AZERTY, ce sont bien Z Q S D (et W A S D sur un QWERTY).
 [RequireComponent(typeof(Rigidbody))]
@@ -48,6 +49,13 @@ public class DeplacementBonhomme : MonoBehaviour
     [Tooltip("Vitesse à laquelle le personnage s'enfonce ou ressort de l'eau, en unités par seconde.")]
     public float vitesseImmersion = 2f;
 
+    [Header("Eau profonde")]
+    [Tooltip("Hauteur de la surface de l'eau.")]
+    public float niveauEau = 0f;
+
+    [Tooltip("Vitesse de descente et de remontée sous l'eau, en unités par seconde.")]
+    public float vitesseNage = 3f;
+
     Rigidbody corps;
     Collider forme;
     Vector3 direction;
@@ -55,6 +63,8 @@ public class DeplacementBonhomme : MonoBehaviour
     float dernierSol = -1f;
     float dernierAppuiSaut = -1f;
     bool espaceMaintenu;
+    bool plongeeDemandee;
+    bool plonge;
     SphereCollider sphere;
     Vector3 centreSphere;
     float enfoncement;
@@ -106,6 +116,10 @@ public class DeplacementBonhomme : MonoBehaviour
         if (clavier.spaceKey.wasPressedThisFrame)
             dernierAppuiSaut = Time.time;
         espaceMaintenu = clavier.spaceKey.isPressed;
+
+        // Touche A (position du Q sur un clavier QWERTY) : plonger ou remonter.
+        if (clavier.qKey.wasPressedThisFrame)
+            plongeeDemandee = true;
     }
 
     void FixedUpdate()
@@ -114,7 +128,15 @@ public class DeplacementBonhomme : MonoBehaviour
         if (auSol)
             dernierSol = Time.time;
 
-        bool dansEau = EstDansEau();
+        if (EstDans<ZoneEauProfonde>())
+        {
+            Nager();
+            return;
+        }
+        plonge = false;
+        plongeeDemandee = false;
+
+        bool dansEau = EstDans<ZoneEau>();
         MettreAJourImmersion(dansEau);
 
         Vector3 v = direction * (dansEau ? vitesse * facteurVitesseEau : vitesse);
@@ -141,14 +163,53 @@ public class DeplacementBonhomme : MonoBehaviour
         corps.linearVelocity = v;
     }
 
-    // Le centre du personnage est-il au-dessus d'une zone d'eau ?
-    bool EstDansEau()
+    // En eau profonde : on flotte à moitié immergé, ou on nage sous l'eau après avoir plongé.
+    void Nager()
+    {
+        if (plongeeDemandee)
+        {
+            plonge = !plonge;
+            plongeeDemandee = false;
+        }
+
+        Vector3 v = direction * vitesse * facteurVitesseEau;
+        float y = corps.position.y;
+
+        if (plonge)
+        {
+            // Sous l'eau : on descend doucement vers le fond, Espace fait remonter.
+            MettreAJourImmersion(false);
+            float cible = espaceMaintenu ? vitesseNage : -vitesseNage;
+            v.y = Mathf.MoveTowards(corps.linearVelocity.y, cible, 8f * Time.fixedDeltaTime);
+            if (y > niveauEau - 0.5f && v.y > 0f) v.y = 0f; // on ne ressort pas sans appuyer sur A
+        }
+        else
+        {
+            // En surface : la moitié de la sphère sous l'eau, comme dans l'eau peu profonde.
+            MettreAJourImmersion(true);
+            bool sautDemande = Time.time - dernierAppuiSaut <= tempsMemoireSaut;
+            if (sautDemande && Mathf.Abs(y - niveauEau) < 0.2f)
+            {
+                v.y = VitesseSaut; // pour sortir de l'eau ou monter sur un rocher
+                dernierAppuiSaut = -1f;
+            }
+            else if (y > niveauEau + 0.05f)
+                v.y = corps.linearVelocity.y - Gravite * multiplicateurChute * Time.fixedDeltaTime;
+            else
+                v.y = Mathf.Clamp((niveauEau - y) * 5f, -vitesseNage * 2f, vitesseNage * 2f);
+        }
+
+        corps.linearVelocity = v;
+    }
+
+    // Le centre du personnage est-il dans une zone portant le composant T ?
+    bool EstDans<T>() where T : Component
     {
         if (forme == null) return false;
         int n = Physics.OverlapSphereNonAlloc(forme.bounds.center, 0.05f, tampon, ~0,
             QueryTriggerInteraction.Collide);
         for (int i = 0; i < n; i++)
-            if (tampon[i].GetComponent<ZoneEau>() != null)
+            if (tampon[i].GetComponent<T>() != null)
                 return true;
         return false;
     }
