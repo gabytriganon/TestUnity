@@ -12,6 +12,8 @@ public class LancerSphere : MonoBehaviour
     [Tooltip("Créatures contenues dans les 3 sphères de départ, de gauche à droite.")]
     public Texture[] creaturesDepart = new Texture[3];
 
+    static readonly string[] NomsDepart = { "Mawile", "Gligar", "Abra" };
+
     [Tooltip("Diamètre de la sphère.")]
     public float taille = 0.35f;
 
@@ -66,8 +68,11 @@ public class LancerSphere : MonoBehaviour
             GameObject sphere = CreerSphere(new Vector3(p.x, sol + taille / 2f, p.z), Quaternion.LookRotation(-devant));
             sphere.name = "Sphere de depart";
             int n = i + 1;
-            if (creaturesDepart != null && n < creaturesDepart.Length)
-                sphere.AddComponent<SphereDepart>().creature = creaturesDepart[n];
+            Texture image = creaturesDepart != null && n < creaturesDepart.Length ? creaturesDepart[n] : null;
+            // Si l'image n'est pas réglée dans la scène, on la charge depuis Assets/Resources/Creatures.
+            if (image == null)
+                image = Resources.Load<Texture2D>("Creatures/" + NomsDepart[n]);
+            sphere.AddComponent<SphereDepart>().creature = image;
         }
     }
 
