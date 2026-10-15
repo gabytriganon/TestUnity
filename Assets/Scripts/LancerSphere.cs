@@ -2,11 +2,15 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // Appuyer sur E lance une sphère de capture devant le personnage, en cloche.
-// Au lancement du jeu, 3 sphères sont posées au sol devant le personnage (décor).
+// Au lancement du jeu, 3 sphères de départ sont posées au sol devant le personnage,
+// chacune avec une créature à choisir (touche A à côté, voir ChoixDepart).
 public class LancerSphere : MonoBehaviour
 {
     [Tooltip("Matériau de base de la sphère (une texture rouge et blanche lui est ajoutée).")]
     public Material materiau;
+
+    [Tooltip("Créatures contenues dans les 3 sphères de départ, de gauche à droite.")]
+    public Texture[] creaturesDepart = new Texture[3];
 
     [Tooltip("Diamètre de la sphère.")]
     public float taille = 0.35f;
@@ -29,6 +33,8 @@ public class LancerSphere : MonoBehaviour
     void Awake()
     {
         deplacement = GetComponent<DeplacementBonhomme>();
+        if (GetComponent<ChoixDepart>() == null)
+            gameObject.AddComponent<ChoixDepart>();
     }
 
     void Update()
@@ -45,7 +51,7 @@ public class LancerSphere : MonoBehaviour
         PoserSpheresAuSol();
     }
 
-    // Au lancement du jeu : 3 sphères alignées sur le sol, face au personnage.
+    // Au lancement du jeu : 3 sphères de départ alignées sur le sol, face au personnage.
     void PoserSpheresAuSol()
     {
         Vector3 devant = deplacement != null ? deplacement.Orientation * Vector3.forward : transform.forward;
@@ -58,7 +64,10 @@ public class LancerSphere : MonoBehaviour
             if (Physics.Raycast(p + Vector3.up * 5f, Vector3.down, out RaycastHit impact, 20f, ~0, QueryTriggerInteraction.Ignore))
                 sol = impact.point.y;
             GameObject sphere = CreerSphere(new Vector3(p.x, sol + taille / 2f, p.z), Quaternion.LookRotation(-devant));
-            sphere.name = "Sphere au sol";
+            sphere.name = "Sphere de depart";
+            int n = i + 1;
+            if (creaturesDepart != null && n < creaturesDepart.Length)
+                sphere.AddComponent<SphereDepart>().creature = creaturesDepart[n];
         }
     }
 

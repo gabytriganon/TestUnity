@@ -161848,6 +161848,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   materiau: {fileID: 2100000, guid: cb2a450f3cfccdeed23109881797c8ce, type: 2}
+  creaturesDepart:
+  - {fileID: 2800000, guid: 8262c1c7d146832249a34ff3d3927b18, type: 3}
+  - {fileID: 2800000, guid: e729634b4bc8dea769441624a2029359, type: 3}
+  - {fileID: 2800000, guid: 2282f5ce92a55cf61bbf2a7c863e694c, type: 3}
   taille: 0.35
   vitesseAvant: 12
   vitesseHaut: 4
