@@ -65,6 +65,7 @@ public class DeplacementBonhomme : MonoBehaviour
     bool espaceMaintenu;
     bool plongeeDemandee;
     bool plonge;
+    float hauteurSautSol; // hauteur du saut depuis le sol touché (plus haute sur une PlateformeSaut)
     SphereCollider sphere;
     Vector3 centreSphere;
     float enfoncement;
@@ -87,6 +88,7 @@ public class DeplacementBonhomme : MonoBehaviour
         corps.freezeRotation = true;
         corps.useGravity = false; // on applique notre propre gravité, réglée pour le saut
         cap = transform.eulerAngles.y;
+        hauteurSautSol = hauteurSaut;
     }
 
     void Update()
@@ -147,7 +149,7 @@ public class DeplacementBonhomme : MonoBehaviour
         bool peutSauter = Time.time - dernierSol <= tempsGrace;
         if (sautDemande && peutSauter && v.y <= 0.01f)
         {
-            v.y = VitesseSaut;
+            v.y = Mathf.Sqrt(2f * Gravite * hauteurSautSol);
             dernierAppuiSaut = -1f;
             dernierSol = -1f;
         }
@@ -233,7 +235,12 @@ public class DeplacementBonhomme : MonoBehaviour
         Bounds b = forme.bounds;
         float rayon = Mathf.Min(b.extents.x, b.extents.z);
         Vector3 centre = b.center + Vector3.down * (b.extents.y - rayon);
-        return Physics.SphereCast(centre, rayon * 0.9f, Vector3.down, out _, rayon * 0.1f + 0.05f,
-            ~0, QueryTriggerInteraction.Ignore);
+        if (!Physics.SphereCast(centre, rayon * 0.9f, Vector3.down, out RaycastHit sol, rayon * 0.1f + 0.05f,
+                ~0, QueryTriggerInteraction.Ignore))
+            return false;
+
+        PlateformeSaut plateforme = sol.collider.GetComponentInParent<PlateformeSaut>();
+        hauteurSautSol = plateforme != null ? plateforme.hauteurSaut : hauteurSaut;
+        return true;
     }
 }
