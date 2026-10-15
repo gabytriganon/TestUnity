@@ -2,8 +2,9 @@ using System.Collections;
 using UnityEngine;
 
 // Sphère lancée par le héros. Si elle touche une créature : la créature entre dans
-// la sphère, la sphère tombe au sol, oscille de droite à gauche, puis la capture
-// et son image va dans un emplacement libre du menu.
+// la sphère, la sphère tombe au sol et oscille de droite à gauche. Avec 5 % de chance
+// la créature est capturée et son image va dans un emplacement libre du menu ;
+// sinon la sphère s'ouvre et la créature ressort.
 public class SphereLancee : MonoBehaviour
 {
     [Tooltip("Temps avant que la sphère disparaisse si elle ne touche aucune créature.")]
@@ -14,6 +15,9 @@ public class SphereLancee : MonoBehaviour
 
     [Tooltip("Nombre d'oscillations avant la capture.")]
     public int nombreOscillations = 3;
+
+    [Tooltip("Chance de capture (0.05 = 5 %). Sinon la sphère s'ouvre et la créature ressort.")]
+    [Range(0f, 1f)] public float chanceCapture = 0.05f;
 
     Rigidbody corps;
     bool enCapture;
@@ -88,7 +92,26 @@ public class SphereLancee : MonoBehaviour
             yield return new WaitForSeconds(0.5f);
         }
 
-        // 4. Capturée : l'image va dans le premier emplacement libre du menu.
+        // 4a. Ratée : la sphère s'ouvre et la créature ressort à sa place.
+        if (Random.value >= chanceCapture)
+        {
+            creature.gameObject.SetActive(true);
+            Vector3 sortie = transform.position;
+            for (float f = 0f; f < 1f; f += Time.deltaTime / 0.4f)
+            {
+                t.localScale = Vector3.Lerp(Vector3.zero, echelleDepart, f);
+                t.position = Vector3.Lerp(sortie, positionDepart, f);
+                transform.localScale = Vector3.Lerp(transform.localScale, Vector3.zero, f);
+                yield return null;
+            }
+            t.localScale = echelleDepart;
+            t.position = positionDepart;
+            creature.EnCapture = false;
+            Destroy(gameObject);
+            yield break;
+        }
+
+        // 4b. Capturée : l'image va dans le premier emplacement libre du menu.
         if (menu != null) menu.Ajouter(creature.portrait);
         Vector3 echelle = transform.localScale;
         for (float f = 0f; f < 1f; f += Time.deltaTime / 0.2f)
