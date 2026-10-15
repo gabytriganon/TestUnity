@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 // Sphère lancée par le héros. Si elle touche une créature : la créature entre dans
-// la sphère, la sphère tombe au sol et oscille de droite à gauche. Avec 5 % de chance
+// la sphère, la sphère tombe au sol et oscille de droite à gauche. Avec 20 % de chance
 // la créature est capturée et son image va dans un emplacement libre du menu ;
 // sinon la sphère s'ouvre et la créature ressort.
 public class SphereLancee : MonoBehaviour
@@ -16,8 +16,8 @@ public class SphereLancee : MonoBehaviour
     [Tooltip("Nombre d'oscillations avant la capture.")]
     public int nombreOscillations = 3;
 
-    [Tooltip("Chance de capture (0.05 = 5 %). Sinon la sphère s'ouvre et la créature ressort.")]
-    [Range(0f, 1f)] public float chanceCapture = 0.05f;
+    [Tooltip("Chance de capture (0.2 = 20 %). Sinon la sphère s'ouvre et la créature ressort.")]
+    [Range(0f, 1f)] public float chanceCapture = 0.2f;
 
     Rigidbody corps;
     bool enCapture;

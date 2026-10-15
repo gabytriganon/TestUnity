@@ -119,7 +119,8 @@ public class DeplacementBonhomme : MonoBehaviour
         espaceMaintenu = clavier.spaceKey.isPressed;
 
         // Touche A (position du Q sur un clavier QWERTY) : plonger ou remonter.
-        if (clavier.qKey.wasPressedThisFrame)
+        // Près d'une sphère de départ, A sert à choisir la créature (ChoixDepart), pas à plonger.
+        if (clavier.qKey.wasPressedThisFrame && SphereDepart.LaPlusProche(transform.position) == null)
             plongeeDemandee = true;
     }
 
